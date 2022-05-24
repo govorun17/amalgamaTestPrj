@@ -67,9 +67,9 @@ public class BuilderIntersection implements Intersection{
 
     private List<Segment> parseFromString(String bunch) {
         Function<String, Double> convertStrToDouble = (strPoint) -> {
-            Double point;
+            double point;
             try {
-                point = Double.valueOf(strPoint);
+                point = Double.parseDouble(strPoint);
             }
             catch (NumberFormatException e) {
                 if (strPoint.contains("inf")) {
