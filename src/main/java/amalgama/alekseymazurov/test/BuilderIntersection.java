@@ -1,9 +1,11 @@
-package amalgama.alekseymazurov.test.model;
+package amalgama.alekseymazurov.test;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class BuilderIntersection implements Intersection{
     private BunchLinkedList<Segment> iterator;
@@ -100,14 +102,14 @@ public class BuilderIntersection implements Intersection{
                     if (point.contains("]")) {
                         point = point.replace("]", "");
                     }
-                    Point p = new Point(Double.valueOf(point), true);
+                    Point p = new Point(Double.valueOf(point), true, true);
                     seg.setLeftPoint(p);
                     continue;
                 }
                 // a]
                 if (point.contains("]")) {
                     point = point.replace("]", "");
-                    Point p = new Point(Double.valueOf(point), true);
+                    Point p = new Point(Double.valueOf(point), true, false);
                     seg.setRightPoint(p);
                     continue;
                 }
@@ -118,14 +120,14 @@ public class BuilderIntersection implements Intersection{
                     if (point.contains(")")) {
                         point = point.replace(")", "");
                     }
-                    Point p = new Point(convertStrToDouble.apply(point), false);
+                    Point p = new Point(convertStrToDouble.apply(point), false, true);
                     seg.setLeftPoint(p);
                     continue;
                 }
                 // a)
                 if (point.contains(")")) {
                     point = point.replace(")", "");
-                    Point p = new Point(convertStrToDouble.apply(point), false);
+                    Point p = new Point(convertStrToDouble.apply(point), false, false);
                     seg.setRightPoint(p);
                 }
             }
@@ -161,63 +163,116 @@ public class BuilderIntersection implements Intersection{
         }
 
         this.iterator = this.iterator.getNextSeg();
-        List<Segment> toRemove = new LinkedList<>();
 
         for (; iterator != null; iterator = iterator.getNextSeg()) {
-
+            
             union = iterator;
+            List<Segment> array = new ArrayList<>(intersection);
 
-            for (; union != null; union = union.getUnionSeg()) {
+            int index = 0;
+            Segment inter;
 
-                toRemove.clear();
-                for (Segment inter : intersection) {
+            intersection.clear();
+            while (union != null && index < array.size()) {
 
-                    Integer compLeftLeft = comparePoints(inter.getLeftPoint(), true, union.getValue().getLeftPoint(), true);
-                    Integer compRightRight = comparePoints(inter.getRightPoint(), false, union.getValue().getRightPoint(), false);
-                    // если левая т 1го ЛЕВЕЕ левой т 2го
-                    if (compLeftLeft == -1) {
+                inter = array.get(index);
 
-                        Integer compRightLeft = comparePoints(inter.getRightPoint(), false, union.getValue().getLeftPoint(), true);
-                        // если правая т 1го НЕ ЛЕВЕЕ левой т 2го - смещаем левую точку отрезка
-                        if (compRightLeft >= 0) {
-                            inter.setLeftPoint(union.getValue().getLeftPoint());
-                        }
-                        // если правая т 1го ЛЕВЕЕ левой т 2го - удаляем из результата отрезок
-                        else {
-                            toRemove.add(inter);
-                            continue;
-                        }
+                Segment newSeg = new Segment();
 
+                Integer compLeftLeft = comparePoints(inter.getLeftPoint(), union.getValue().getLeftPoint());
+
+                // если левая т 1го ЛЕВЕЕ левой т 2го
+                if (compLeftLeft == -1) {
+
+                    Integer compRightLeft = comparePoints(inter.getRightPoint(), union.getValue().getLeftPoint());
+
+                    // если правая т 1го ПРАВЕЕ или РАВНА левой т 2го
+                    if (compRightLeft >= 0) {
+                        newSeg.setLeftPoint(union.getValue().getLeftPoint().clone());
+
+                        Integer compRightRight = comparePoints(inter.getRightPoint(), union.getValue().getRightPoint());
+                        // если правая т 1го ПРАВЕЕ правой т 2го
                         if (compRightRight == 1) {
-                            inter.setRightPoint(union.getValue().getRightPoint());
+                            newSeg.setRightPoint(union.getValue().getRightPoint().clone());
+                            this.intersection.add(newSeg);
+                            union = union.getUnionSeg();
                         }
-                    }
-                    // если левая т 1го ПРАВЕЕ левой т 2го
-                    else if (compLeftLeft == 1) {
-
-                        Integer compLeftRight = comparePoints(inter.getLeftPoint(), true, union.getValue().getRightPoint(), false);
-                        // если левая т 1го НЕ ПРАВЕЕ правой т 2го
-                        if (compLeftRight <= 0) {
-                            // если правая т 1го правее правой т 2го - смещаем точку отрезка
-                            if (compRightRight == 1) {
-                                inter.setRightPoint(union.getValue().getRightPoint());
-                            }
+                        // если правая т 1го ЛЕВЕЕ правой т 2го
+                        else if (compRightRight == -1){
+                            newSeg.setRightPoint(inter.getRightPoint().clone());
+                            this.intersection.add(newSeg);
+                            index++;
                         }
-                        // если левая т 1го ПРАВЕЕ правой т 2го
+                        // если ПРАВЫЕ точки совпадают
                         else {
-                            toRemove.add(inter);
-                            break;
+                            newSeg.setRightPoint(inter.getRightPoint().clone());
+                            this.intersection.add(newSeg);
+                            union = union.getUnionSeg();
+                            index++;
                         }
                     }
-                    // если левые точки равны
+                    // если правая т 1го ЛЕВЕЕ левой т 2го
                     else {
-                        if (compRightRight == 1) {
-                            inter.setRightPoint(union.getValue().getRightPoint());
-                        }
+                        index++;
                     }
                 }
-                if (toRemove.size() > 0) {
-                    intersection.removeAll(toRemove);
+                // если левая т 1го ПРАВЕЕ левой т 2го
+                else if (compLeftLeft == 1) {
+
+                    Integer compLeftRight = comparePoints(inter.getLeftPoint(), union.getValue().getRightPoint());
+                    // если левая т 1го ЛЕВЕЕ или РАВНА правой т 2го
+                    if (compLeftRight <= 0) {
+                        newSeg.setLeftPoint(inter.getLeftPoint());
+
+                        Integer compRightRight = comparePoints(inter.getRightPoint(), union.getValue().getRightPoint());
+                        // если правая т 1го ПРАВЕЕ правой т 2го
+                        if (compRightRight == 1) {
+                            newSeg.setRightPoint(union.getValue().getRightPoint().clone());
+                            this.intersection.add(newSeg);
+                            union = union.getUnionSeg();
+                        }
+                        // если правая т 1го ЛЕВЕЕ правой т 2го
+                        else if (compRightRight == -1){
+                            newSeg.setRightPoint(inter.getRightPoint().clone());
+                            this.intersection.add(newSeg);
+                            index++;
+                        }
+                        // если ПРАВЫЕ точки совпадают
+                        else {
+                            newSeg.setRightPoint(inter.getRightPoint().clone());
+                            this.intersection.add(newSeg);
+                            union = union.getUnionSeg();
+                            index++;
+                        }
+                    }
+                    // если левая т 1го ПРАВЕЕ правой т 2го
+                    else {
+                        union = union.getUnionSeg();
+                    }
+                }
+                // если ЛЕВЫЕ точки совпадают
+                else {
+                    newSeg.setLeftPoint(inter.getLeftPoint().clone());
+                    Integer compRightRight = comparePoints(inter.getRightPoint(), union.getValue().getRightPoint());
+                    // если правая т 1го ПРАВЕЕ правой т 2го
+                    if (compRightRight == 1) {
+                        newSeg.setRightPoint(union.getValue().getRightPoint().clone());
+                        this.intersection.add(newSeg);
+                        union = union.getUnionSeg();
+                    }
+                    // если правая т 1го ЛЕВЕЕ правой т 2го
+                    else if (compRightRight == -1){
+                        newSeg.setRightPoint(inter.getRightPoint().clone());
+                        this.intersection.add(newSeg);
+                        index++;
+                    }
+                    // если ПРАВЫЕ точки совпадают
+                    else {
+                        newSeg.setRightPoint(inter.getRightPoint().clone());
+                        this.intersection.add(newSeg);
+                        union = union.getUnionSeg();
+                        index++;
+                    }
                 }
             }
         }
@@ -231,26 +286,23 @@ public class BuilderIntersection implements Intersection{
      *
      * @param f первая точка
      * @param s вторая точка
-     * @param isFLeft 1 точка левая
-     * @param isSLeft 2 точка левая
-     *
      * @return 1 если первая точка правее второй
      * <br> 0 если точки идентичны
      * <br> -1 если первая точка левее второй
      */
-    private Integer comparePoints(Point f, boolean isFLeft, Point s, boolean isSLeft) {
+    private Integer comparePoints(Point f, Point s) {
         if (f.getValue() > s.getValue()) {
             return 1;
         }
         else if (f.getIn() && !s.getIn() && f.getValue().equals(s.getValue())) {
-            if (isFLeft && isSLeft || !isFLeft && isSLeft) return -1;
+            if (f.getLeft() && s.getLeft() || !f.getLeft() && s.getLeft()) return -1;
             else return 1;
         }
         else if (f.getValue() < s.getValue()) {
             return -1;
         }
         else if (!f.getIn() && s.getIn() && f.getValue().equals(s.getValue())) {
-            if (isFLeft) return 1;
+            if (f.getLeft()) return 1;
             else return -1;
         }
         else {
@@ -336,8 +388,8 @@ public class BuilderIntersection implements Intersection{
         }
 
         Integer compare;
-        Double rpoint;
-        Double lpoint;
+        Point rpoint;
+        Point lpoint;
         Double result = point;
 
         Segment tmpSeg = intersection.get(0);
@@ -349,7 +401,7 @@ public class BuilderIntersection implements Intersection{
             return tmpSeg.getLeftPoint().getValue();
         }
         else {
-            lpoint = tmpSeg.getRightPoint().getValue();
+            lpoint = tmpSeg.getRightPoint();
         }
 
         tmpSeg = intersection.get(intersection.size() - 1);
@@ -361,7 +413,7 @@ public class BuilderIntersection implements Intersection{
             return tmpSeg.getRightPoint().getValue();
         }
         else {
-            rpoint = tmpSeg.getLeftPoint().getValue();
+            rpoint = tmpSeg.getLeftPoint();
         }
 
         int i = 0;
@@ -371,6 +423,9 @@ public class BuilderIntersection implements Intersection{
                 i++;
                 continue;
             }
+            if (i == intersection.size() - 1) {
+                break;
+            }
 
             compare = segment.comparePoint(point);
 
@@ -378,19 +433,28 @@ public class BuilderIntersection implements Intersection{
                 return result;
             }
 
-            if (compare == 1 && lpoint < segment.getRightPoint().getValue()) {
-                lpoint = segment.getRightPoint().getValue();
+            if (compare == 1 && lpoint.getValue() < segment.getRightPoint().getValue()) {
+                lpoint = segment.getRightPoint();
             }
 
-            if (compare == -1 && rpoint < segment.getLeftPoint().getValue()) {
-                rpoint = segment.getLeftPoint().getValue();
+            if (compare == -1 && rpoint.getValue() < segment.getLeftPoint().getValue()) {
+                rpoint = segment.getLeftPoint();
+            }
+            i++;
+        }
 
-                if (point - lpoint < rpoint - point) {
-                    result = lpoint;
-                }
-                else {
-                    result = rpoint;
-                }
+        if (point - lpoint.getValue() < rpoint.getValue() - point) {
+            result = lpoint.getValue();
+        }
+        else if (point - lpoint.getValue() > rpoint.getValue() - point){
+            result = rpoint.getValue();
+        }
+        else {
+            if (lpoint.getIn() && !rpoint.getIn()) {
+                result = lpoint.getValue();
+            }
+            else {
+                result = rpoint.getValue();
             }
         }
 

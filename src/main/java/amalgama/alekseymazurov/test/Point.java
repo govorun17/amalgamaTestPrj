@@ -1,4 +1,4 @@
-package amalgama.alekseymazurov.test.model;
+package amalgama.alekseymazurov.test;
 
 import java.util.Objects;
 
@@ -11,15 +11,17 @@ import java.util.Objects;
  *
  * @author Aleksey Mazurov
  */
-public class Point {
+public class Point implements Cloneable{
     private Double value;
     private Boolean isIn;
+    private Boolean isLeft;
 
-    public Point(Double value, Boolean isIn) {
+    public Point(Double value, Boolean isIn, Boolean isLeft) {
         Objects.requireNonNull(value, "Value could not be null");
         Objects.requireNonNull(isIn, "Value could not be null");
         this.value = value;
         this.isIn = isIn;
+        this.isLeft = isLeft;
     }
 
     public Double getValue() {
@@ -40,6 +42,14 @@ public class Point {
         isIn = in;
     }
 
+    public Boolean getLeft() {
+        return isLeft;
+    }
+
+    public void setLeft(Boolean left) {
+        isLeft = left;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -56,5 +66,14 @@ public class Point {
         int result = value.hashCode();
         result = 31 * result + isIn.hashCode();
         return result;
+    }
+
+    @Override
+    public Point clone() {
+        try {
+            return (Point) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

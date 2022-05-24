@@ -1,10 +1,28 @@
-package amalgama.alekseymazurov.test.model;
+package amalgama.alekseymazurov.test;
+
+import java.util.Objects;
 
 public class Segment {
     private Point leftPoint;
     private Point rightPoint;
 
     public Segment() {
+    }
+
+    public Segment(
+            Point leftPoint,
+            Point rightPoint
+    ) {
+        Objects.requireNonNull(leftPoint, "Value could not be null");
+        Objects.requireNonNull(rightPoint, "Value could not be null");
+        this.leftPoint = leftPoint;
+        this.rightPoint = rightPoint;
+    }
+
+    public Segment(
+            Point leftPoint
+    ) {
+
     }
 
     public Point getLeftPoint() {
@@ -51,8 +69,12 @@ public class Segment {
     }
 
     public void selfCheck() {
-        if (rightPoint == null && leftPoint != null && leftPoint.getIn()) rightPoint = leftPoint;
-        else if (leftPoint == null) throw new IllegalArgumentException();
+        if (rightPoint == null && leftPoint != null && leftPoint.getIn()) {
+            Point rp = leftPoint.clone();
+            rp.setLeft(false);
+            rightPoint = rp;
+        }
+        else if (leftPoint == null) throw new IllegalArgumentException("Check entered values");
     }
 
     /**

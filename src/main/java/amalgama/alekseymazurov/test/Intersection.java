@@ -1,4 +1,4 @@
-package amalgama.alekseymazurov.test.model;
+package amalgama.alekseymazurov.test;
 
 import java.util.List;
 
